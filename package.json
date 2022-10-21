@@ -1,0 +1,14 @@
+{
+  "name": "tic-tac-toe-3d",
+  "version": "1.0.0",
+  "description": "3D version of Tic Tac Toe",
+  "main": "game.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Tommaso Moro",
+  "license": "ISC",
+  "dependencies": {
+    "three": "^0.145.0"
+  }
+}
