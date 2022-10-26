@@ -17,7 +17,7 @@ controls.enableDamping = true
 controls.dampingFactor = 0.1
 
 controls.mouseButtons = {
-	LEFT: THREE.MOUSE.PAN,
+    LEFT: THREE.MOUSE.PAN,
 	MIDDLE: THREE.MOUSE.DOLLY,
 	RIGHT: THREE.MOUSE.ROTATE
 }
@@ -78,8 +78,6 @@ for (const lightPos of lights) {
 const pointer = new THREE.Vector2()
 const raycaster = new THREE.Raycaster()
 
-let lastIntersect
-
 window.addEventListener("click", (e) => {
     pointer.x = (e.clientX / window.innerWidth) * 2 - 1
     pointer.y = -(e.clientY / window.innerHeight) * 2 + 1
@@ -87,46 +85,32 @@ window.addEventListener("click", (e) => {
     raycaster.setFromCamera(pointer, camera)
     const intersects = raycaster.intersectObjects(scene.children)
     
-    lastIntersect = intersects[0]
-
-    // console.log(lastIntersect)
-    if (lastIntersect) {
-        // lastIntersect.object.material.color.set(0xff0000)
-        // const geometry = new THREE.BoxGeometry(1, 1, 1);
-        // const material = new THREE.MeshBasicMaterial({color: 0x00ff00});
-        // const cubeMesh = new THREE.Mesh(geometry, material);
-        // cubeMesh.position.set(x, y, z)
-
-
-        let mesh = getRandomInt(0,1) ? xMesh.clone() : oMesh.clone()
-        
-        
-        lastIntersect.object.add(mesh)
-        console.log(lastIntersect.object)
+    if (intersects[0]) {
+        let response = game.tryMakeMove(intersects[0].object.positionCube)
+        // console.log("risposta finale: " + response)
+        if (response) intersects[0].object.add(response == "x" ? xMesh.clone() : oMesh.clone())
+        // if (response) console.log(intersects[0].object.positionCube)
     }
-    
 })
-
-function getRandomInt(min, max) {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
 
 
 //--- game ---//
 
-// let game = {
-//     turn: "x" or "o",
-//     startedAtTime: "", //timestamp
-//     finishedAtTime: "", //timestamp
-//     finished: false,
+const combinationWin = [
+    [0, 2], [1, 2], [2, 2], //orizzontale su
+    [0, 1], [1, 1], [2, 1], //orizzontale centro
+    [0, 0], [1, 0], [2, 0], //orizzontale giu
 
-// }
+    [0, 2], [0, 1], [0, 0], //verticale su
+    [1, 2], [1, 1], [1, 0], //verticale centro
+    [2, 2], [2, 1], [2, 0], //verticale giu
+
+    [0, 2], [1, 1], [2, 0], //obliquo su sinistra - giu destra
+    [2, 2], [1, 1], [0, 0], //obliquo su destra - giu sinistra
+]
 
 class Game {
-    #turn;
-    get turn() { return this.#turn }
+    #turn; get turn() { return this.#turn }
 
     #started = false; get started() { return this.#started }
     #startedAtTime; get startedAtTime() { return this.#startedAtTime }
@@ -181,7 +165,7 @@ class Game {
             })
         })
 
-
+        console.log(this.#cube)
     }
 
     #createCube() {
@@ -205,28 +189,160 @@ class Game {
         // console.log(this.#startedAtTime)
     }
 
-    makeMove(position) {
+    tryMakeMove(pos) {
+        // console.log("occupato? " + this.#isPositionOccupated(pos))
+        if (this.#isPositionOccupated(pos) || this.finished) return undefined
+
+        this.#cube[pos.x][pos.y][pos.z].occupied = true
+        this.#cube[pos.x][pos.y][pos.z].type = this.#turn
 
 
+        console.log(this.#checkWin())
+        if (this.#checkWin()) {
+            console.log("Ha vinto " + this.#turn)
+            this.#gameEnd(this.#turn)
+        }
+        else {
+            this.#changeTurn()
+        }
+
+        this.printFace()
+
+        return this.#cube[pos.x][pos.y][pos.z].type
     }
 
-    isPositionOccupated(pos) {
-
+    #isPositionOccupated(pos) {
+        return this.#cube[pos.x][pos.y][pos.z].occupied
     }
 
-    #checkWin() {
+    #checkWin() { // true if the player wins according to this.#turn, false if the player loses, undefined if nobody win
+        let faces = this.#from3Dto2D()
 
-        return false
+        for (let facei = 0; facei < faces.length; facei++) {
+            let face = faces[facei].face2D
+
+            // check == 0 (false) -> check horizontally
+            // check == 1 (true)  -> check vertically
+            for (let check = 0; check < 2; check++) {
+                for (let i = 0; i < face.length; i++) {
+                    let referenceBox = (check) ? face[0][i].type : face[i][0].type
+                    if (referenceBox == "") continue
+            
+                    let assign = true
+                    for (let j = 0; j < face[i].length; j++)
+                        if ((!check && face[i][j].type != referenceBox) || (check && face[j][i].type != referenceBox))
+                            assign = false
+                    if (!assign) continue
+            
+                    return referenceBox == this.#turn
+                }
+            }
+
+            // check == 0 (false) -> check obliquely from left to right
+            // check == 1 (true)  -> check obliquely from right to left
+            for (let check = 0; check < 2; check++) {
+                for (let i = 0; i < face.length; i++) {
+                    let referenceBox = face[1][1].type
+                    if (referenceBox == "") break
+                    
+                    if ((!check && face[i][i].type != referenceBox) || (check && face[i][2-i].type != referenceBox)) break
+                    
+                    return referenceBox == this.#turn
+                }
+            }
+        }
+
+        return undefined
     }
+
+
+    #from3Dto2D() {
+        let cubeFaces = [
+            {cord: "y", num: 2, hasToSwitch: true, face2D: []},
+            {cord: "z", num: 0, hasToSwitch: true, face2D: []},
+            {cord: "x", num: 0, hasToSwitch: true, face2D: []},
+            {cord: "y", num: 0, hasToSwitch: false, face2D: []},
+            {cord: "x", num: 2, hasToSwitch: false, face2D: []},
+            {cord: "z", num: 2, hasToSwitch: false, face2D: []}
+        ]
+
+        for (let face = 0; face < 6; face++) {
+            for (let i = 0; i < 3; i++) {
+                cubeFaces[face].face2D[i] = []
+                for (let j = 0; j < 3; j++) 
+                    if (cubeFaces[face].cord == "x")
+                        cubeFaces[face].face2D[i][j] = this.#cube[cubeFaces[face].num][j][i]
+
+                    else if (cubeFaces[face].cord == "y")
+                        cubeFaces[face].face2D[i][j] = this.#cube[j][cubeFaces[face].num][i]
+
+                    else if (cubeFaces[face].cord == "z")
+                        cubeFaces[face].face2D[i][j] = this.#cube[j][i][cubeFaces[face].num]   
+            }
+        }
+
+        cubeFaces.forEach((cubeFace) => {
+            if (cubeFace.hasToSwitch) {
+                if (cubeFace.cord == "x" && cubeFace.num == 0) {
+                    cubeFace.face2D.forEach((cubeRow) => {
+                        let cubeRow0 = cubeRow[0]
+
+                        cubeRow[0] = cubeRow[2]
+                        cubeRow[2] = cubeRow0
+                    })
+
+                } else {
+                    let cubeFace0 = cubeFace.face2D[0].slice()
+
+                    cubeFace.face2D[0] = cubeFace.face2D[2].slice()
+                    cubeFace.face2D[2] = cubeFace0
+                }
+            }
+
+            delete cubeFace.hasToSwitch
+        })
+
+        return cubeFaces
+    }
+
+    #from3Dto1D() {
+        let cubeFaces = this.#from3Dto2D()
+        let cube1D = []
+
+        cubeFaces.forEach((cubeFace) => {
+            for (let i = 0; i < 3; i++)
+                for (let j = 0; j < 3; j++)
+                    cube1D.push(cubeFace.face2D[i][j])
+        })
+
+        return cube1D
+    }
+
+    printFace() {
+        let cube1D = this.#from3Dto1D()
+        cube1D.forEach((box, i) => {
+            cubes2D[i].innerHTML = box.type
+        })
+    }
+
 
     #changeTurn() {
 
-        this.#turn = (this.#turn = "x") ? this.#turn = "o" : this.#turn = "x"
+        // console.log("prima del cambio turno: " + this.#turn)
+
+        this.#turn = (this.#turn == "x") ? this.#turn = "o" : this.#turn = "x"
 
 
+        // console.log("dopo del cambio turno: " + this.#turn)
     }
 
-    #gameEnd() {
+
+    #gameEnd(win) {
+
+        console.log("vince: "+ win)
+
+        this.#finished = true
+        this.#finishedAtTime = new Date()
 
     }
 }
@@ -252,7 +368,9 @@ let game = new Game("x")
 //---   ---//
 
 
-camera.position.set(6, 4, 12);
+// camera.position.set(6, 4, 12);
+
+camera.position.set(0, 0, 15);
 
 function animate() {
 	requestAnimationFrame(animate);
@@ -267,3 +385,15 @@ function WindowResizeHome() {
 } WindowResizeHome();
   
 window.addEventListener('resize', WindowResizeHome);
+
+
+
+
+
+let cubes2D = document.getElementsByClassName("box")
+
+// console.log(cubes2D)
+
+for (var i = 0; i < cubes2D.length; i++) {
+    cubes2D[i].innerHTML = i
+}

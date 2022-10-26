@@ -17,3 +17,90 @@ body {
     overflow: hidden;
     background-color: black;
 }
+
+
+
+
+
+.cube-2d-container {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    width: 50vmin;
+    height: 50vmin;
+    /* background-color: rgb(255, 0, 0); */
+
+    display: flex;
+    flex-direction: column;
+}
+
+.row {
+    display: flex;
+    flex-direction: row;
+
+    justify-content: center;
+
+    width: 50vmin;
+    height: calc(50vmin / 12);
+
+    /* background-color: rgb(0, 51, 255); */
+
+
+    /* box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+
+    border: 2px solid rgb(0, 255, 234); */
+}
+
+.row-central {
+    display: flex;
+    flex-direction: row;
+
+    justify-content: center;
+
+    width: calc(50vmin);
+    height: calc(50vmin / 12 * 3);
+
+    /* background-color: rgb(0, 51, 255); */
+
+
+    /* box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+
+    border: 2px solid rgb(0, 255, 234); */
+}
+
+.row-normal {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+
+}
+
+.column {
+    display: flex;
+    flex-direction: column;
+
+
+}
+
+.box {
+    width: calc(50vmin / 12);
+    height: calc(50vmin / 12);
+    background-color: rgb(255, 255, 255);
+
+
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+
+    border: 2px solid rgb(0, 0, 0);
+
+}
