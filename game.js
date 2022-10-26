@@ -96,19 +96,6 @@ window.addEventListener("click", (e) => {
 
 //--- game ---//
 
-const combinationWin = [
-    [0, 2], [1, 2], [2, 2], //orizzontale su
-    [0, 1], [1, 1], [2, 1], //orizzontale centro
-    [0, 0], [1, 0], [2, 0], //orizzontale giu
-
-    [0, 2], [0, 1], [0, 0], //verticale su
-    [1, 2], [1, 1], [1, 0], //verticale centro
-    [2, 2], [2, 1], [2, 0], //verticale giu
-
-    [0, 2], [1, 1], [2, 0], //obliquo su sinistra - giu destra
-    [2, 2], [1, 1], [0, 0], //obliquo su destra - giu sinistra
-]
-
 class Game {
     #turn; get turn() { return this.#turn }
 
